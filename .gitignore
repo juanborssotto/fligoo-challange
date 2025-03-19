@@ -1,2 +1,16 @@
 .env
-postgres-data
+
+dags
+logs
+plugins
+
+fligoo-db-volume
+
+apache-airflow/config/*
+apache-airflow/dags/*
+!apache-airflow/dags/insert-flights-dag.py
+apache-airflow/logs/*
+apache-airflow/plugins/*
+
+jupyter-volume/*
+!jupyter-volume/read_database.ipynb
