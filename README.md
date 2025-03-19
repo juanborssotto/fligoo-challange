@@ -30,6 +30,7 @@ docker compose up -d
 ```
 
 ### Running the tasks
+Wait 1-2 minutes for everything to be up and healthy then execute:
 #### Airflow
 ```
 1) Enter: http://localhost:8080/dags/insert-flights-dag/grid?search=insert-flights-dag
