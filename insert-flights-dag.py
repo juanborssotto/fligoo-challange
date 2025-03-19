@@ -3,6 +3,10 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 import requests
 import psycopg2
+import os
+
+aviationstack_api_key = os.environ['AVIATIONSTACK_API_KEY']
+postgres_pass = os.environ['POSTGRES_PASSWORD']
 
 args = {
     'owner': 'Juan Cruz Borssotto',
@@ -40,6 +44,18 @@ class Flight:
         self.airline = airline
 
 def parse_flight(data):
+    """Converts raw json flight data to an object of the class Flight
+
+    Parameters
+        ----------
+        data : dict
+        Raw json flight data
+
+    Raises
+    ------
+        Exception
+        If flight number is None        
+    """
     try:
         if data["flight"]["number"] is None:
             raise Exception("Null flight number") 
@@ -55,19 +71,42 @@ def parse_flight(data):
     except Exception as e:
         raise Exception(e)
 
+def transform_flight(flight):
+    """Transforms flight object properties arrival terminal and arrival timezone formats from / to -
+
+    Parameters
+        ----------
+        flight : Flight
+        Flight object
+
+    Raises
+    ------
+        Exception
+        If any property is None
+    """
+    try:
+        flight.arrival.terminal = flight.arrival.terminal.replace("/", " - ")
+        flight.departure.timezone = flight.departure.timezone.replace("/", " - ")
+        return flight
+    except Exception as e:
+        raise(e)
+
 def insert_flights():
     try:
-        conn = psycopg2.connect(dbname='testfligoo', user='fligoo', password='mypass', host='fligoo-db', port='5432')
+        print("Opening connection")
+        conn = psycopg2.connect(dbname='testfligoo', user='fligoo', password=postgres_pass, host='fligoo-db', port='5432')
         cursor = conn.cursor()
 
-        api_key = "da511f009f76904cf15aea2ac1d02e60"
-        response = requests.get(f'https://api.aviationstack.com/v1/flights?access_key={api_key}&flight_status=active&limit=100')
+        print("Sending aviation stack request")
+        response = requests.get(f'https://api.aviationstack.com/v1/flights?access_key={aviationstack_api_key}&flight_status=active&limit=100')
         data = response.json()["data"]
         flights = []
+        print("Parsing flights values")
         for d in data:
             try:
                 flight = parse_flight(d)
-                flights.append(flight)
+                transformed_flight = transform_flight(flight)
+                flights.append(transformed_flight)
             except Exception as e:
                 print("error parsing flight: ", e, "data: ", d)
         
@@ -84,15 +123,12 @@ def insert_flights():
                 flight.arrival.terminal,
                 flight.airline.name))
 
+        print("Preparing values to insert")
         args = ','.join(cursor.mogrify("(%s,%s,%s,%s,%s,%s,%s,%s,%s)", value).decode('utf-8')
                 for value in insert_values)
-        print("number", flights[0].number)
-        print(args)
+        print("Executing insert")
         cursor.execute("INSERT INTO testdata (flight_number, flight_status, flight_date, departure_airport, departure_timezone, arrival_airport, arrival_timezone, arrival_terminal, airline_name) VALUES " + (args) + " ON CONFLICT DO NOTHING")
-
-        cursor.execute("select * from testdata")
-
-        print(cursor.fetchall())
+        print("Insert executed")
 
     except Exception as e:
         print(e)

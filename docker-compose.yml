@@ -72,6 +72,8 @@ x-airflow-common:
     # The following line can be used to set a custom config file, stored in the local config folder
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    AVIATIONSTACK_API_KEY: ${AVIATIONSTACK_API_KEY}
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/apache-airflow/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/apache-airflow/logs:/opt/airflow/logs
@@ -302,6 +304,8 @@ services:
     restart: always
     ports:
       - 8889:8888
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       fligoo-db:
         condition: service_started
