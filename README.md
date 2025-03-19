@@ -1,6 +1,13 @@
 # fligoo-challange
 
 ## airflow
+mkdir apache-airflow
+mkdir apache-airflow/config apache-airflow/dags apache-airflow/logs apache-airflow/plugins
+cp insert-flights-dag.py apache-airflow/dags/
+
+mkdir jupyter-volume
+cp read_database.ipynb jupyter-volume/
+
 docker compose up airflow-init -d
 docker compose up -d
 
